@@ -6,10 +6,10 @@ import java.util.List;
 /**
  * The Lexer (also called tokenizer or scanner) reads raw source text
  * one character at a time and groups characters into Tokens.
- *   "5 + 30"  →  [NUMBER(5), PLUS(+), NUMBER(30), EOF()]
- * ALREADY WORKING: numbers, + - * /, parentheses, =, whitespace.
- * YOUR JOB (Milestone 1): comparisons, identifiers, keywords, strings.
- * Follow the pattern of the existing code — then un-@Disable the tests.
+ * "5 + 30"  →  [NUMBER(5), PLUS(+), NUMBER(30), EOF()]
+ *
+ * Handles: numbers, strings, identifiers, keywords, arithmetic and
+ * comparison operators, parentheses, assignment, whitespace and newlines.
  */
 public class Lexer {
 
@@ -22,7 +22,9 @@ public class Lexer {
         this.source = source;
     }
 
-    /** Main loop: scan one token at a time until we run out of characters. */
+
+     // Main loop: scan one token at a time until we run out of characters.
+
     public List<Token> tokenize() {
         while (!atEnd()) {
             char c = peek();
@@ -36,31 +38,77 @@ public class Lexer {
                 number();
             } else {
                 switch (c) {
-                    case '+': addToken(TokenType.PLUS, "+"); advance(); break;
-                    case '-': addToken(TokenType.MINUS, "-"); advance(); break;
-                    case '*': addToken(TokenType.STAR, "*"); advance(); break;
-                    case '/': addToken(TokenType.SLASH, "/"); advance(); break;
-                    case '(': addToken(TokenType.LEFT_PAREN, "("); advance(); break;
-                    case ')': addToken(TokenType.RIGHT_PAREN, ")"); advance(); break;
-                    case '=':
-                        // TODO Milestone 1: if the NEXT char is also '=',
-                        // this is EQUAL_EQUAL, not assignment.
-                        // Hint: advance(); then check peek() == '='
-                        addToken(TokenType.EQUALS, "=");
+                    case '+':
+                        addToken(TokenType.PLUS, "+");
                         advance();
                         break;
-
-                    // TODO Milestone 1: handle '>' and '>=' (GREATER / GREATER_EQUAL)
-                    // TODO Milestone 1: handle '<' and '<=' (LESS / LESS_EQUAL)
-                    // TODO Milestone 1: handle '!' followed by '=' (BANG_EQUAL)
-                    // TODO Milestone 1: handle '"' → call a new method string()
+                    case '-':
+                        addToken(TokenType.MINUS, "-");
+                        advance();
+                        break;
+                    case '*':
+                        addToken(TokenType.STAR, "*");
+                        advance();
+                        break;
+                    case '/':
+                        addToken(TokenType.SLASH, "/");
+                        advance();
+                        break;
+                    case '(':
+                        addToken(TokenType.LEFT_PAREN, "(");
+                        advance();
+                        break;
+                    case ')':
+                        addToken(TokenType.RIGHT_PAREN, ")");
+                        advance();
+                        break;
+                    case '=':
+                        advance();
+                        if (!atEnd() && peek() == '=') {
+                            addToken(TokenType.EQUAL_EQUAL, "==");
+                            advance();
+                        } else {
+                            addToken(TokenType.EQUALS, "=");
+                        }
+                        break;
+                    case '>':
+                        advance();
+                        if (!atEnd() && peek() == '=') {
+                            addToken(TokenType.GREATER_EQUAL, ">=");
+                            advance();
+                        } else {
+                            addToken(TokenType.GREATER, ">");
+                        }
+                        break;
+                    case '<':
+                        advance();
+                        if (!atEnd() && peek() == '=') {
+                            addToken(TokenType.LESS_EQUAL, "<=");
+                            advance();
+                        } else {
+                            addToken(TokenType.LESS, "<");
+                        }
+                        break;
+                    case '!':
+                        advance();
+                        if (!atEnd() && peek() == '=') {
+                            addToken(TokenType.BANG_EQUAL, "!=");
+                            advance();
+                        } else {
+                            throw new LexException("Unexpected character '!' on line " + line);
+                        }
+                        break;
+                    case '"':
+                        string();
+                        break;
 
                     default:
-                        // TODO Milestone 1: if Character.isLetter(c), call a new
-                        // method identifier() — like number() but for letters.
-                        // After reading the word, check if it's a keyword
-                        // ("let" → LET, "print" → PRINT, "if" → IF, "else" → ELSE,
-                        //  "true" → TRUE, "false" → FALSE), otherwise IDENTIFIER.
+                        // A word starts with a letter (or underscore), so hand off
+                        // to identifier(). Anything else is not valid Sip.
+                        if (Character.isLetter(c) || c == '_') {
+                            identifier();
+                            break;
+                        }
                         throw new LexException("Unexpected character '" + c + "' on line " + line);
                 }
             }
@@ -69,7 +117,9 @@ public class Lexer {
         return tokens;
     }
 
-    /** Reads a whole number like 42 or 3.14 — study this as your template. */
+
+    // Reads a whole number like 42 or 3.14 — study this as your template.
+
     private void number() {
         int start = pos;
         while (!atEnd() && Character.isDigit(peek())) {
@@ -86,14 +136,74 @@ public class Lexer {
         addToken(TokenType.NUMBER, source.substring(start, pos));
     }
 
+    /**
+     * Reads a string literal: "hello".
+     * The quotes are only markers — they are NOT part of the token's text.
+     * So "hello" produces one token: STRING(hello).
+     */
+    private void string() {
+        advance();          // consume the opening quote
+        int start = pos;    // first character of the actual text
+
+        while (!atEnd() && peek() != '"') {
+            if (peek() == '\n') {
+                line++;     // a string may span lines; keep the counter honest
+            }
+            advance();
+        }
+
+        // We stopped for one of two reasons: found the closing quote, or ran out.
+        if (atEnd()) {
+            throw new LexException("Unterminated string on line " + line);
+        }
+
+        addToken(TokenType.STRING, source.substring(start, pos));
+        advance();          // consume the closing quote
+    }
+
+    /**
+     * Reads a word: a variable name like total, or a keyword like let.
+     * Same shape as number(), but for letters — and with one extra step:
+     * once the word is read, we check whether it is a reserved keyword.
+     */
+    private void identifier() {
+        int start = pos;
+
+        // First char is already known to be a letter or '_'.
+        // After that, digits are allowed too: myVar2 is a valid name.
+        while (!atEnd() && (Character.isLetterOrDigit(peek()) || peek() == '_')) {
+            advance();
+        }
+
+        String word = source.substring(start, pos);
+        addToken(keywordOrIdentifier(word), word);
+    }
+
+    /**
+     * Decides whether a word is one of Sip's reserved keywords.
+     * Note: switch on String compares with equals(), NOT ==.
+     * (1Z0-808: == compares references, equals() compares contents.)
+     */
+    private TokenType keywordOrIdentifier(String word) {
+        switch (word) {
+            case "let":   return TokenType.LET;
+            case "print": return TokenType.PRINT;
+            case "if":    return TokenType.IF;
+            case "else":  return TokenType.ELSE;
+            case "true":  return TokenType.TRUE;
+            case "false": return TokenType.FALSE;
+            default:      return TokenType.IDENTIFIER;
+        }
+    }
+
     // ---- small helper methods ----
 
-    /** Look at the current character without consuming it. */
+     // Look at the current character without consuming it.
     private char peek() {
         return source.charAt(pos);
     }
 
-    /** Move to the next character. */
+     // Move to the next character.
     private void advance() {
         pos++;
     }

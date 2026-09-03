@@ -16,6 +16,7 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
+
         Scanner scanner = new Scanner(System.in);
         System.out.println("Sip 0.1 — type an expression, or 'exit' to quit.");
 
@@ -36,6 +37,7 @@ public class Main {
                 System.out.println("error: " + e.getMessage());
             }
         }
+
         System.out.println("bye!");
     }
 }

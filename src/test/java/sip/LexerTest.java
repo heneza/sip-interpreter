@@ -1,6 +1,5 @@
 package sip;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -10,8 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for the Lexer. Run with: mvn test
  *
- * The first group passes already. The @Disabled ones are YOUR Milestone 1 —
- * implement the feature, remove the @Disabled line, and make it green.
+ * All tests are active as of Milestone 1 (full lexer).
  */
 class LexerTest {
 
@@ -57,7 +55,6 @@ class LexerTest {
 
     // ---------- Milestone 1: implement, then remove @Disabled ----------
 
-    @Disabled("Milestone 1: comparison operators")
     @Test
     void tokenizesComparisons() {
         List<Token> tokens = new Lexer("a >= 5").tokenize();
@@ -66,7 +63,6 @@ class LexerTest {
         assertEquals(TokenType.NUMBER, tokens.get(2).getType());
     }
 
-    @Disabled("Milestone 1: == vs =")
     @Test
     void distinguishesAssignFromEquality() {
         List<Token> tokens = new Lexer("x == 1").tokenize();
@@ -76,7 +72,6 @@ class LexerTest {
         assertEquals(TokenType.EQUALS, tokens.get(1).getType());
     }
 
-    @Disabled("Milestone 1: identifiers and keywords")
     @Test
     void tokenizesKeywordsAndIdentifiers() {
         List<Token> tokens = new Lexer("let total = 5").tokenize();
@@ -85,7 +80,6 @@ class LexerTest {
         assertEquals("total", tokens.get(1).getText());
     }
 
-    @Disabled("Milestone 1: string literals")
     @Test
     void tokenizesStringLiteral() {
         List<Token> tokens = new Lexer("\"hello\"").tokenize();
@@ -93,7 +87,6 @@ class LexerTest {
         assertEquals("hello", tokens.get(0).getText());
     }
 
-    @Disabled("Milestone 1: unterminated string should fail")
     @Test
     void throwsOnUnterminatedString() {
         assertThrows(LexException.class, () -> new Lexer("\"oops").tokenize());
