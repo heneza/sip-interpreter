@@ -4,7 +4,7 @@ Each milestone matches the exam chapter you're studying. Build the milestone **a
 finishing the chapter — it's your applied practice. Commit to Git after every milestone
 with a clear message (`git commit -m "Milestone 2: lexer handles identifiers and keywords"`).
 
-## Milestone 1 — Lexer ✅ DONE (Ch. 1–3: basics, operators, decisions)
+## Milestone 1 — Lexer (Ch. 1–3: basics, operators, decisions)
 
 - [x] Comparison operators: `> < >= <= == !=` (peek at the *next* char to tell `>` from `>=`)
 - [x] Identifiers: variable names like `x`, `total`, `myVar2`
