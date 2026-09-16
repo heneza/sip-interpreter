@@ -4,19 +4,30 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * The Sip REPL (Read-Eval-Print Loop).
- *
- * For now it only shows the tokens the Lexer produces — that's enough to
- * SEE your Milestone 1 work running. Once the parser and evaluator exist
- * (Milestones 3–4), this will print actual results.
- *
+ * Sip — a small scripting language, interpreted.
+
+ * This is the REPL (Read-Eval-Print Loop): it reads a line you type,
+ * runs it, prints the result, and repeats. Each line travels through
+ * three stages, one class per stage:
+     1. Lexer      text  → tokens   "5 + 3"  → [NUMBER(5), PLUS, NUMBER(3)]
+ *   2. Parser     tokens → tree    a structure where nesting encodes
+                                    precedence, so 5 + 3 * 2 groups the
+                                    multiplication as a subtree
+ *   3. Evaluator  tree  → value    walks the tree and computes 11
+
+ * Splitting the work this way is how real interpreters and compilers are
+ * built: each stage has one job and hands a simpler representation to the
+ * next. Errors from any stage carry a line number and are reported here
+ * without stopping the session.
+
  * Run:  java sip.Main
- * Quit: type 'exit'
- */
+ * Quit: type 'exit'                                                     */
+
 public class Main {
 
     public static void main(String[] args) {
 
+        Evaluator evaluator = new Evaluator();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Sip 0.1 — type an expression, or 'exit' to quit.");
 
@@ -30,10 +41,9 @@ public class Main {
 
             try {
                 List<Token> tokens = new Lexer(input).tokenize();
-                System.out.println("tokens: " + tokens);
-                // TODO Milestone 3: parse the tokens into an Expr tree
-                // TODO Milestone 4: evaluate the tree and print the result
-            } catch (LexException e) {
+                Stmt stmt = new Parser(tokens).parse();
+                evaluator.execute(stmt);
+            } catch (LexException | ParseException | SipRuntimeException e) {
                 System.out.println("error: " + e.getMessage());
             }
         }

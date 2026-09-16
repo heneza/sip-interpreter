@@ -18,13 +18,39 @@ public class Parser {
     }
 
     /** Entry point: parse one whole expression and insist nothing is left over. */
-    public Expr parse() {
-        Expr expr = expression();
+    public Stmt parse() {
+        Stmt stmt = statement();
         if (!atEnd()) {
             throw new ParseException("Unexpected '" + peek().getText()
                     + "' on line " + peek().getLine());
         }
-        return expr;
+        return stmt;
+    }
+    // ---- statements (NEW — put these here) ----
+    private Stmt statement() {
+        if (match(TokenType.LET)) {
+        return letStatement();
+        }
+        if (match(TokenType.PRINT)) {
+            return printStatement();
+        }
+        return expressionStatement(); }
+
+    private Stmt letStatement() {
+        Token name = consume(TokenType.IDENTIFIER, "Expected a variable name after 'let'");
+        consume(TokenType.EQUALS, "Expected '=' after the variable name");
+        Expr value = expression();
+        return new StmtLet(name, value);
+    }
+
+    private Stmt printStatement() {
+        Expr value = expression();
+        return new StmtPrint(value);
+    }
+
+    private Stmt expressionStatement() {
+        Expr value = expression();
+        return new StmtExpression(value);
     }
 
     private Expr expression() {
@@ -95,6 +121,13 @@ public class Parser {
     }
 
     // ---- small helper methods ----
+
+    private Token consume(TokenType type, String message) {
+        if (check(type)) {
+            return advance();
+        }
+        throw new ParseException(message + " on line " + peek().getLine());
+    }
 
     /** If the current token is any of these types, consume it and return true. */
     private boolean match(TokenType... types) {
