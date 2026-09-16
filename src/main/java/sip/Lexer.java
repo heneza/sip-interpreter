@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Lexer (also called tokenizer or scanner) reads raw source text
- * one character at a time and groups characters into Tokens.
- * "5 + 30"  →  [NUMBER(5), PLUS(+), NUMBER(30), EOF()]
+ * Reads source text one character at a time and groups the characters
+ * into tokens. "5 + 30" becomes [NUMBER(5), PLUS, NUMBER(30), EOF].
  *
- * Handles: numbers, strings, identifiers, keywords, arithmetic and
- * comparison operators, parentheses, assignment, whitespace and newlines.
+ * Handles numbers, strings, identifiers, keywords, arithmetic and
+ * comparison operators, parentheses, braces, assignment, whitespace and
+ * newlines.
  */
 public class Lexer {
 
@@ -23,7 +23,7 @@ public class Lexer {
     }
 
 
-     // Main loop: scan one token at a time until we run out of characters.
+    /** Scans one token at a time until the source runs out. */
 
     public List<Token> tokenize() {
         while (!atEnd()) {
@@ -60,6 +60,14 @@ public class Lexer {
                         break;
                     case ')':
                         addToken(TokenType.RIGHT_PAREN, ")");
+                        advance();
+                        break;
+                    case '{':
+                        addToken(TokenType.LEFT_BRACE, "{");
+                        advance();
+                        break;
+                    case '}':
+                        addToken(TokenType.RIGHT_BRACE, "}");
                         advance();
                         break;
                     case '=':
@@ -103,8 +111,8 @@ public class Lexer {
                         break;
 
                     default:
-                        // A word starts with a letter (or underscore), so hand off
-                        // to identifier(). Anything else is not valid Sip.
+                        // A word starts with a letter or underscore.
+                        // Anything else is not valid Sip.
                         if (Character.isLetter(c) || c == '_') {
                             identifier();
                             break;
@@ -118,7 +126,7 @@ public class Lexer {
     }
 
 
-    // Reads a whole number like 42 or 3.14 — study this as your template.
+    /** Reads a whole number such as 42 or 3.14. */
 
     private void number() {
         int start = pos;
@@ -137,9 +145,8 @@ public class Lexer {
     }
 
     /**
-     * Reads a string literal: "hello".
-     * The quotes are only markers — they are NOT part of the token's text.
-     * So "hello" produces one token: STRING(hello).
+     * Reads a string literal. The quotes mark the boundaries and are not
+     * part of the token text, so "hello" produces STRING(hello).
      */
     private void string() {
         advance();          // consume the opening quote
@@ -147,12 +154,12 @@ public class Lexer {
 
         while (!atEnd() && peek() != '"') {
             if (peek() == '\n') {
-                line++;     // a string may span lines; keep the counter honest
+                line++;     // a string may span lines
             }
             advance();
         }
 
-        // We stopped for one of two reasons: found the closing quote, or ran out.
+        // The loop ended either at the closing quote or at the end of input.
         if (atEnd()) {
             throw new LexException("Unterminated string on line " + line);
         }
@@ -162,15 +169,14 @@ public class Lexer {
     }
 
     /**
-     * Reads a word: a variable name like total, or a keyword like let.
-     * Same shape as number(), but for letters — and with one extra step:
-     * once the word is read, we check whether it is a reserved keyword.
+     * Reads a word: a variable name such as total, or a keyword such as let.
+     * Once the word is read, keywordOrIdentifier decides which it is.
      */
     private void identifier() {
         int start = pos;
 
-        // First char is already known to be a letter or '_'.
-        // After that, digits are allowed too: myVar2 is a valid name.
+        // The first character is already known to be a letter or '_'.
+        // After that digits are allowed too, so myVar2 is a valid name.
         while (!atEnd() && (Character.isLetterOrDigit(peek()) || peek() == '_')) {
             advance();
         }
@@ -180,9 +186,8 @@ public class Lexer {
     }
 
     /**
-     * Decides whether a word is one of Sip's reserved keywords.
-     * Note: switch on String compares with equals(), NOT ==.
-     * (1Z0-808: == compares references, equals() compares contents.)
+     * Decides whether a word is a reserved keyword.
+     * A switch on String compares with equals(), not ==.
      */
     private TokenType keywordOrIdentifier(String word) {
         switch (word) {
@@ -190,20 +195,21 @@ public class Lexer {
             case "print": return TokenType.PRINT;
             case "if":    return TokenType.IF;
             case "else":  return TokenType.ELSE;
+            case "while": return TokenType.WHILE;
             case "true":  return TokenType.TRUE;
             case "false": return TokenType.FALSE;
             default:      return TokenType.IDENTIFIER;
         }
     }
 
-    // ---- small helper methods ----
+    // ---- helpers ----
 
-     // Look at the current character without consuming it.
+    /** Returns the current character without consuming it. */
     private char peek() {
         return source.charAt(pos);
     }
 
-     // Move to the next character.
+    /** Moves to the next character. */
     private void advance() {
         pos++;
     }

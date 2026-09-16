@@ -1,9 +1,11 @@
 package sip;
 
- /** Base type for every expression in Sip.
- * Abstract: you can't instantiate Expr itself, only its subclasses.
- * Its purpose is to let Binary hold "some expression" without
-  caring which kind — that's polymorphism doing the work.**/
+/**
+ * Base type for every expression in Sip.
+ *
+ * Abstract, so only the subclasses can be instantiated. It exists so that
+ * Binary can hold two expressions without knowing which kind they are.
+ */
 
 public abstract class Expr {
 

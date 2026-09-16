@@ -1,11 +1,10 @@
 package sip;
 
 /**
- * One token produced by the Lexer. For the input "5 + 3" the lexer
- * produces: Token(NUMBER, "5"), Token(PLUS, "+"), Token(NUMBER, "3").
- * This class is IMMUTABLE: all fields are private final and there are
- * no setters. Once created, a Token never changes.
- * (1Z0-808: encapsulation, final, constructors)
+ * One token from the source. For "5 + 3" the lexer produces
+ * Token(NUMBER, "5"), Token(PLUS, "+"), Token(NUMBER, "3").
+ *
+ * Immutable: fields are private final and there are no setters.
  */
 public class Token {
 

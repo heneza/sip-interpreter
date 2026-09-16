@@ -4,7 +4,7 @@ package sip;
 public class Binary extends Expr {
 
     private final Expr left;
-    private final Token operator;  // the whole Token, so we keep the line number
+    private final Token operator;  // the whole token, so the line number is kept
     private final Expr right;
 
     public Binary(Expr left, Token operator, Expr right) {

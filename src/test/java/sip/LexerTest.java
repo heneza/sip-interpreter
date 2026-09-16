@@ -9,11 +9,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for the Lexer. Run with: mvn test
  *
- * All tests are active as of Milestone 1 (full lexer).
+ * Covers numbers, operators, identifiers, keywords and strings.
  */
 class LexerTest {
-
-    // ---------- These pass with the starter code ----------
 
     @Test
     void tokenizesSingleNumber() {
@@ -52,8 +50,6 @@ class LexerTest {
         // assertThrows: the test PASSES if the exception IS thrown
         assertThrows(LexException.class, () -> new Lexer("5 # 3").tokenize());
     }
-
-    // ---------- Milestone 1: implement, then remove @Disabled ----------
 
     @Test
     void tokenizesComparisons() {

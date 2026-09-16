@@ -1,9 +1,5 @@
 package sip;
-/**
- * Every kind of token the Sip language understands.
- * An enum is a fixed set of constants — perfect for token kinds.
- * (1Z0-808: enums, switch on enums)
- */
+/** Every kind of token the Sip language understands. */
 public enum TokenType {
     // Literals
     NUMBER,        // 42, 3.14
@@ -17,7 +13,7 @@ public enum TokenType {
     SLASH,         // /
     EQUALS,        // =   (assignment)
 
-    // Comparison — Milestone 1: the lexer doesn't produce these yet!
+    // Comparison
     GREATER,       // >
     GREATER_EQUAL, // >=
     LESS,          // <
@@ -28,9 +24,11 @@ public enum TokenType {
     // Grouping
     LEFT_PAREN,    // (
     RIGHT_PAREN,   // )
+    LEFT_BRACE,    // {
+    RIGHT_BRACE,   // }
 
-    // Keywords — Milestone 1
-    LET, PRINT, IF, ELSE, TRUE, FALSE,
+    // Keywords
+    LET, PRINT, IF, ELSE, WHILE, TRUE, FALSE,
 
     // End of input marker
     EOF

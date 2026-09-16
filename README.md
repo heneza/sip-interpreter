@@ -1,58 +1,113 @@
-# Sip — a tiny language interpreter, written in Java
+# Sip
 
-**Sip** is a small scripting language and its interpreter, built from scratch in plain Java —
-no parser generators, no external libraries. One sip of Java at a time.
+A small scripting language and its interpreter, written in plain Java.
+No parser generators, no external libraries.
 
 ```
-> let x = 5 + 3 * 2
-> print x
-11
-> if (x > 10) print "big"
-big
+> let price = 42
+> let tax = price * 0.2
+> print "total: " + (price + tax)
+total: 50.4
+> price >= 40
+true
 ```
 
-## Why this project exists
+## Why I built it
 
-I built Sip while preparing for the Oracle Certified Associate (1Z0-808) exam.
-Every component of an interpreter exercises a core part of the Java language:
-
-| Interpreter component | Java concepts it exercises |
-|---|---|
-| Lexer (text → tokens) | Strings, chars, loops, `switch`, enums |
-| Token & AST classes | Classes, encapsulation, constructors, immutability |
-| Parser (tokens → tree) | Methods, recursion, `ArrayList` |
-| Evaluator | Inheritance, polymorphism, casting, operators |
-| Error handling | Custom exceptions, try/catch, exception hierarchy |
-| Variable environment | Collections, scoping |
+Internship project, built while studying for the Oracle OCA and OCP exams.
+Each part of an interpreter uses a different area of Java, so the lexer covers
+strings and loops, the parser covers methods and recursion, and the evaluator
+covers inheritance and casting. Building one was a way to practise all of it on
+something real instead of on exercises.
 
 ## How it works
 
-An interpreter runs in three stages:
+Three stages. Each has one job and passes a simpler form to the next.
 
-1. **Lexer** — reads raw text `"5 + 3"` and produces tokens: `NUMBER(5)`, `PLUS`, `NUMBER(3)`
-2. **Parser** — arranges tokens into a tree that respects precedence: `(+ 5 3)`
-3. **Evaluator** — walks the tree and computes the result: `8`
+| Stage | Input | Output |
+|---|---|---|
+| `Lexer` | `"5 + 3"` | `[NUMBER(5), PLUS, NUMBER(3)]` |
+| `Parser` | tokens | a tree: `(+ 5 3)` |
+| `Evaluator` | tree | `8` |
+
+The parser uses recursive descent. One method per precedence level, each
+calling the next. This is why `5 + 3 * 2` gives 11 and not 16.
+
+## What works now
+
+- Numbers, strings, booleans
+- Arithmetic: `+ - * /`
+- Comparison: `> < >= <= == !=`
+- String concatenation: `"a" + 1`
+- Parentheses
+- Variables: `let x = 5` to declare, `x = 6` to change
+- `print`
+- Blocks with `{ }`, each with its own scope
+- `if` / `else` and `while`
+- Script files as well as the REPL
+- Errors report a line number and do not stop the REPL
+
+Sip has no functions yet. See [ROADMAP.md](ROADMAP.md).
 
 ## Running it
 
-Requires JDK 17+ (any JDK 8+ works — the code uses only Java 8 features).
+Needs JDK 17 or later.
 
-**Plain javac:**
 ```bash
-cd src/main/java
-javac sip/*.java
-java sip.Main
+javac -d out src/main/java/sip/*.java
+java -cp out sip.Main                      # REPL
+java -cp out sip.Main examples/demo.sip    # run a file
 ```
 
-**With Maven (also runs the tests):**
+In the REPL, type `exit` to quit. A block can span several lines: the prompt
+changes to `...` until the closing brace.
+
+Tests:
+
 ```bash
 mvn test
-mvn compile exec:java -Dexec.mainClass=sip.Main
 ```
 
-## Project status
+## A longer example
 
-See [ROADMAP.md](ROADMAP.md) — milestones are mapped to 1Z0-808 exam objectives.
+```
+let total = 0
+let i = 1
+
+while (i <= 5) {
+    total = total + i
+    i = i + 1
+}
+
+print "sum of 1 to 5 is " + total
+```
+
+`examples/demo.sip` has more.
+
+## Project layout
+
+```
+src/main/java/sip/
+  Lexer.java          text to tokens
+  Token.java          one token
+  TokenType.java      every kind of token
+  Parser.java         tokens to statements and expression trees
+  Expr.java           base class for expressions
+  Literal.java        5, "hi", true
+  Binary.java         5 + 3
+  Variable.java       x
+  Stmt.java           base class for statements
+  StmtLet.java        let x = 5
+  StmtAssign.java     x = 6
+  StmtPrint.java      print x
+  StmtExpression.java a bare expression
+  StmtBlock.java      { ... }
+  StmtIf.java         if / else
+  StmtWhile.java      while
+  Evaluator.java      runs the statements
+  Environment.java    stores variables, one scope per block
+  Main.java           REPL and file runner
+```
 
 ## Author
 

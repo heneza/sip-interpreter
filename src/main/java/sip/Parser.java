@@ -1,12 +1,15 @@
 package sip;
 
+import java.util.ArrayList;
 import java.util.List;
 /**
-  Turns a flat token list into an Expr tree (recursive descent).
-  One method per precedence level, loosest first:
-  expression → comparison → addition → multiplication → primary
-  Each level calls the next, so tighter-binding operators are
-  consumed first and end up deeper in the tree.
+ * Turns a flat token list into statements, using recursive descent.
+ *
+ * Parsing starts at statement() and descends into expressions. The
+ * expression methods run one per precedence level, loosest first:
+ * comparison, addition, multiplication, primary. Each level calls the
+ * next, so tighter operators are consumed first and sit deeper in the
+ * tree. That is why 5 + 3 * 2 gives 11 and not 16.
  */
 public class Parser {
 
@@ -17,7 +20,16 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    /** Entry point: parse one whole expression and insist nothing is left over. */
+    /** Parses a whole program: every statement until the end of input. */
+    public List<Stmt> parseProgram() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!atEnd()) {
+            statements.add(statement());
+        }
+        return statements;
+    }
+
+    /** Parses one statement and checks that nothing is left over. */
     public Stmt parse() {
         Stmt stmt = statement();
         if (!atEnd()) {
@@ -26,15 +38,75 @@ public class Parser {
         }
         return stmt;
     }
-    // ---- statements (NEW — put these here) ----
+    // ---- statements ----
+
+    /** One statement. The first token decides which kind. */
     private Stmt statement() {
         if (match(TokenType.LET)) {
-        return letStatement();
+            return letStatement();
         }
         if (match(TokenType.PRINT)) {
             return printStatement();
         }
-        return expressionStatement(); }
+        if (match(TokenType.IF)) {
+            return ifStatement();
+        }
+        if (match(TokenType.WHILE)) {
+            return whileStatement();
+        }
+        if (match(TokenType.LEFT_BRACE)) {
+            return new StmtBlock(block());
+        }
+        // An identifier followed by '=' is an assignment. Looking one token
+        // ahead is what separates 'x = 1' from the expression 'x'.
+        if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUALS)) {
+            return assignStatement();
+        }
+        return expressionStatement();
+    }
+
+    /** x = 15 */
+    private Stmt assignStatement() {
+        Token name = advance();
+        consume(TokenType.EQUALS, "Expected '=' after the variable name");
+        Expr value = expression();
+        return new StmtAssign(name, value);
+    }
+
+    /** if (condition) statement [else statement] */
+    private Stmt ifStatement() {
+        Token keyword = previous();
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+        Expr condition = expression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after the condition");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(TokenType.ELSE)) {
+            elseBranch = statement();
+        }
+        return new StmtIf(keyword, condition, thenBranch, elseBranch);
+    }
+
+    /** while (condition) statement */
+    private Stmt whileStatement() {
+        Token keyword = previous();
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'");
+        Expr condition = expression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after the condition");
+        Stmt body = statement();
+        return new StmtWhile(keyword, condition, body);
+    }
+
+    /** The statements between { and }. The '{' is already consumed. */
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !atEnd()) {
+            statements.add(statement());
+        }
+        consume(TokenType.RIGHT_BRACE, "Expected '}' to close the block");
+        return statements;
+    }
 
     private Stmt letStatement() {
         Token name = consume(TokenType.IDENTIFIER, "Expected a variable name after 'let'");
@@ -57,7 +129,7 @@ public class Parser {
         return comparison();
     }
 
-    /** Loosest level: a > b, a == b */
+    /** Comparison: a > b, a == b */
     private Expr comparison() {
         Expr expr = addition();
         while (match(TokenType.GREATER, TokenType.GREATER_EQUAL,
@@ -70,7 +142,7 @@ public class Parser {
         return expr;
     }
 
-    /** a + b - c */
+    /** Addition and subtraction: a + b - c */
     private Expr addition() {
         Expr expr = multiplication();
         while (match(TokenType.PLUS, TokenType.MINUS)) {
@@ -81,7 +153,7 @@ public class Parser {
         return expr;
     }
 
-    /** a * b / c — binds tighter, so it sits deeper in the tree */
+    /** Multiplication and division. Binds tighter than addition. */
     private Expr multiplication() {
         Expr expr = primary();
         while (match(TokenType.STAR, TokenType.SLASH)) {
@@ -92,7 +164,7 @@ public class Parser {
         return expr;
     }
 
-    /** The atoms: a value, a name, or a parenthesised expression. */
+    /** A value, a name, or a parenthesised expression. */
     private Expr primary() {
         if (match(TokenType.NUMBER)) {
             return new Literal(Double.parseDouble(previous().getText()));
@@ -110,7 +182,7 @@ public class Parser {
             return new Variable(previous());
         }
         if (match(TokenType.LEFT_PAREN)) {
-            Expr inner = expression();   // start over from the top
+            Expr inner = expression();   // parentheses restart at the top
             if (!match(TokenType.RIGHT_PAREN)) {
                 throw new ParseException("Expected ')' on line " + peek().getLine());
             }
@@ -120,7 +192,7 @@ public class Parser {
                 + "' on line " + peek().getLine());
     }
 
-    // ---- small helper methods ----
+    // ---- helpers ----
 
     private Token consume(TokenType type, String message) {
         if (check(type)) {
@@ -142,6 +214,14 @@ public class Parser {
 
     private boolean check(TokenType type) {
         return !atEnd() && peek().getType() == type;
+    }
+
+    /** Looks one token past the current one, without consuming anything. */
+    private boolean checkNext(TokenType type) {
+        if (atEnd() || current + 1 >= tokens.size()) {
+            return false;
+        }
+        return tokens.get(current + 1).getType() == type;
     }
 
     private Token advance() {
